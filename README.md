@@ -6,4 +6,4 @@ Met het Python-script [pdf_qa_local.py](https://github.com/coret/cabr_woo_bevrag
 
 Het Python-script [pdf_qa_app.py](https://github.com/coret/cabr_woo_bevragen/blob/main/pdf_qa_app.py) wordt er op basis van Streamlit een chat omgeving gemaakt die lokaal draait en in je browser is te openen via `http://localhost:8501/`.
 
-![screenshot chat](screenshot.png "screenshot chat met context")
+![screenshot chat](screenshot2.png "screenshot chat met context")
