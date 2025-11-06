@@ -40,7 +40,7 @@ def run_llm(llm, prompt, context, question):
 # Streamlit App
 # ===============================
 st.set_page_config(page_title="PDF Chat", page_icon="💬", layout="wide")
-st.title("Chat met je PDF-documenten (lokaal via Ollama)")
+st.title("Chat met je PDF-documenten (Lokaal via Ollama)")
 
 with st.spinner("Laden van vector database..."):
     db = load_vectorstore()
@@ -48,7 +48,7 @@ with st.spinner("Laden van vector database..."):
 retriever = db.as_retriever()
 llm = OllamaLLM(model=MODEL_NAME)
 
-template = """Gebruik de onderstaande context om de vraag te beantwoorden.
+template = """Beantwoord de vraag in het Nederlands, gebruik makend van de onderstaande context.
 Context:
 {context}
 
@@ -64,6 +64,12 @@ if "messages" not in st.session_state:
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
+        if msg.get("sources"):
+            with st.expander("Gebruikte context"):
+                for src in msg["sources"]:
+                    st.markdown(f"**{src['source']}** (pagina {src['page']})")
+                    st.write(src["snippet"])
+                    st.divider()
 
 # Invoerveld onderaan
 if question := st.chat_input("Stel een vraag over je documenten..."):
@@ -77,7 +83,29 @@ if question := st.chat_input("Stel een vraag over je documenten..."):
         context = "\n\n".join(d.page_content for d in docs)
         answer = run_llm(llm, prompt, context, question)
 
-    # Toon antwoord in de chat
+    # Bereid broninfo voor
+    sources = []
+    for d in docs:
+        meta = d.metadata or {}
+        snippet = d.page_content[:400].replace("\n", " ") + "..."
+        sources.append({
+            "source": meta.get("source", "Onbekend document"),
+            "page": meta.get("page", "n.v.t."),
+            "snippet": snippet
+        })
+
+    # Toon antwoord + bronnen in de chat
     with st.chat_message("assistant"):
         st.markdown(answer)
-    st.session_state.messages.append({"role": "assistant", "content": answer})
+        with st.expander("📄 Gebruikte context"):
+            for src in sources:
+                st.markdown(f"**{src['source']}** (pagina {src['page']})")
+                st.write(src["snippet"])
+                st.divider()
+
+    # Sla bericht + bronnen op in sessie
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": answer,
+        "sources": sources
+    })
